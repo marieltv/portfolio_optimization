@@ -4,7 +4,7 @@ Portfolio optimization methods.
 
 import numpy as np
 from scipy.optimize import minimize
-from config import MAX_WEIGHT, L2_PENALTY
+from srs.config import MAX_WEIGHT, L2_PENALTY
 
 
 def equal_weight(n_assets: int) -> np.ndarray:

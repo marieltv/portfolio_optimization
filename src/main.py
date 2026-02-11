@@ -5,7 +5,7 @@ Main execution script.
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from config import TICKERS, START_DATE, END_DATE
+from srs.config import TICKERS, START_DATE, END_DATE
 from data import download_prices, compute_log_returns
 from backtest import rolling_backtest
 from metrics import (

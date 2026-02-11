@@ -6,7 +6,7 @@ from typing import Dict, List
 import pandas as pd
 import numpy as np
 
-from config import TRAIN_WINDOW_YEARS, TRADING_DAYS
+from srs.config import TRAIN_WINDOW_YEARS, TRADING_DAYS
 from optimization import (
     equal_weight,
     minimum_variance,
@@ -60,7 +60,7 @@ from typing import Dict, List
 import pandas as pd
 import numpy as np
 
-from config import TRAIN_WINDOW_YEARS, TRADING_DAYS
+from srs.config import TRAIN_WINDOW_YEARS, TRADING_DAYS
 from optimization import (
     equal_weight,
     minimum_variance,
