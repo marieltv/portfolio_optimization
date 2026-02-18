@@ -2,11 +2,11 @@
 Rolling out-of-sample backtesting engine.
 """
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import pandas as pd
 import numpy as np
 
-from srs.config import TRAIN_WINDOW_YEARS, TRADING_DAYS
+from config import TRAIN_WINDOW_YEARS, TRADING_DAYS
 from optimization import (
     equal_weight,
     minimum_variance,
@@ -17,21 +17,40 @@ from optimization import (
 
 def rolling_backtest(
     returns: pd.DataFrame
-) -> Dict[str, pd.Series]:
+) -> Tuple[Dict[str, pd.Series], Dict[str, pd.DataFrame]]:
+    """
+    Rolling train/test backtest with monthly rebalancing.
 
-    strategies = {
+    Returns:
+        portfolio_returns: daily out-of-sample returns
+        weight_history: portfolio weights at each rebalance date
+    """
+
+    train_window = TRAIN_WINDOW_YEARS * TRADING_DAYS
+
+    portfolio_returns = {
         "EqualWeight": [],
         "MinVariance": [],
         "RiskParity": [],
         "RegMaxSharpe": [],
     }
 
-    train_window = TRAIN_WINDOW_YEARS * TRADING_DAYS
-    dates: List[pd.Timestamp] = []
+    weight_history = {
+        "EqualWeight": [],
+        "MinVariance": [],
+        "RiskParity": [],
+        "RegMaxSharpe": [],
+    }
 
-    for i in range(train_window, len(returns)):
-        train = returns.iloc[i - train_window:i]
-        test = returns.iloc[i]
+    rebalance_dates = returns.index[train_window::21]  # approx monthly
+
+    for rebalance_date in rebalance_dates:
+
+        train_end = rebalance_date
+        train_start = returns.index.get_loc(train_end) - train_window
+
+        train = returns.iloc[train_start:returns.index.get_loc(train_end)]
+        test = returns.loc[rebalance_date:]
 
         mean = train.mean().values * TRADING_DAYS
         cov = train.cov().values * TRADING_DAYS
@@ -43,18 +62,30 @@ def rolling_backtest(
             "RegMaxSharpe": regularized_max_sharpe(mean, cov),
         }
 
+        # Apply weights for next ~21 trading days
+        test_period = test.iloc[:21]
+
         for name, w in weights.items():
-            strategies[name].append(test.values @ w)
+            daily_port_returns = test_period.values @ w
+            portfolio_returns[name].extend(daily_port_returns)
+            weight_history[name].append(w)
 
-        dates.append(test.name)
-
-    return {
-        name: pd.Series(values, index=dates)
-        for name, values in strategies.items()
+    # Convert to pandas
+    portfolio_returns = {
+        name: pd.Series(values, index=returns.index[train_window:train_window+len(values)])
+        for name, values in portfolio_returns.items()
     }
+
+    weight_history = {
+        name: pd.DataFrame(values, columns=returns.columns)
+        for name, values in weight_history.items()
+    }
+
+    return portfolio_returns, weight_history
+
 """
 Rolling out-of-sample backtesting engine.
-"""
+
 
 from typing import Dict, List
 import pandas as pd
@@ -106,3 +137,4 @@ def rolling_backtest(
         name: pd.Series(values, index=dates)
         for name, values in strategies.items()
     }
+"""

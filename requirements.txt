@@ -1,0 +1,8 @@
+matplotlib==3.10.8
+numpy==2.4.2
+pandas==3.0.1
+pytest==9.0.2
+scipy==1.17.0
+srs==0.0.2
+streamlit==1.54.0
+yfinance==0.2.66
