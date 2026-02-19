@@ -34,9 +34,15 @@ jobs:
         run: |
           set -e
           python -m pip install --upgrade pip
+          # Install your project as a package (editable mode)
+          pip install -e .
+          # Then install other dependencies
           pip install -r requirements.txt
+
       - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PWD/src" >> $GITHUB_ENV
+        run: |
+          export PYTHONPATH=$(pwd)/src
+          echo "PYTHONPATH=$(pwd)/src" >> $GITHUB_ENV
 
       - name: Run tests
         run: pytest -v
