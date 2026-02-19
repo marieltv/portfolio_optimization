@@ -26,19 +26,21 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/setup.py') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade pip
           pip install -e .
           pip install -r requirements.txt
+          pip install pytest streamlit
 
       - name: Run tests
         run: pytest -v
 
       - name: Streamlit smoke test
-        run: timeout 15 streamlit run src/main.py --server.headless true --server.runOnSave false
+        run: streamlit run src/portfolio_optimization/main.py --server.headless true
+
 
