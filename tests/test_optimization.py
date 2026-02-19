@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.optimization import (
+from portfolio_optimization.optimization import (
     equal_weight,
     minimum_variance,
     risk_parity,

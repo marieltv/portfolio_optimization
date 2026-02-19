@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.data import compute_returns, clean_data
+from portfolio_optimization.data import compute_returns, clean_data
 
 def test_compute_returns_correctness():
     prices = pd.DataFrame({

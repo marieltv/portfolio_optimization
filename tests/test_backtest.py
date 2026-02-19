@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from src.backtest import rolling_backtest
-from src.optimization import equal_weight
+from portfolio_optimization.backtest import rolling_backtest
+from portfolio_optimization.optimization import equal_weight
 
 
 def test_backtest_start_after_window():

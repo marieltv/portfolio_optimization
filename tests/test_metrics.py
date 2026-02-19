@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.metrics import (
+from portfolio_optimization.metrics import (
     sharpe_ratio,
     annualized_return,
     annualized_volatility,
