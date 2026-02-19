@@ -26,27 +26,19 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/setup.py') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
-          set -e
-          python -m pip install --upgrade pip
-          # Install your project as a package (editable mode)
+          python -m pip install --upgrade pip setuptools wheel
           pip install -e .
-          # Then install other dependencies
           pip install -r requirements.txt
-
-      - name: Set PYTHONPATH
-        run: |
-          export PYTHONPATH=$(pwd)/src
-          echo "PYTHONPATH=$(pwd)/src" >> $GITHUB_ENV
 
       - name: Run tests
         run: pytest -v
 
       - name: Streamlit smoke test
-        run: streamlit run src/main.py --server.headless true
+        run: timeout 15 streamlit run src/main.py --server.headless true --server.runOnSave false
 
