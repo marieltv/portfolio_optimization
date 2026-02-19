@@ -5,10 +5,10 @@ Main execution script.
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from srs.config import TICKERS, START_DATE, END_DATE
-from data import download_prices, compute_log_returns
-from backtest import rolling_backtest
-from metrics import (
+from portfolio_optimization.config import TICKERS, START_DATE, END_DATE
+from portfolio_optimization.data import download_prices, compute_log_returns
+from portfolio_optimization.backtest import rolling_backtest
+from portfolio_optimization.metrics import (
     annualized_return,
     annualized_volatility,
     sharpe_ratio,

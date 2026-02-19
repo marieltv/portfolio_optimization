@@ -4,7 +4,7 @@ Performance and risk metrics.
 
 import numpy as np
 import pandas as pd
-from srs.config import TRADING_DAYS
+from portfolio_optimization.config import TRADING_DAYS
 
 
 def annualized_return(returns: pd.Series) -> float:

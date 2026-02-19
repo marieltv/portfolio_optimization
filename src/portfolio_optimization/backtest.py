@@ -6,8 +6,8 @@ from typing import Dict, List, Tuple
 import pandas as pd
 import numpy as np
 
-from config import TRAIN_WINDOW_YEARS, TRADING_DAYS
-from optimization import (
+from portfolio_optimization.config import TRAIN_WINDOW_YEARS, TRADING_DAYS
+from portfolio_optimization.optimization import (
     equal_weight,
     minimum_variance,
     risk_parity,
