@@ -1,4 +1,4 @@
-name: CI
+name: Portfolio CI
 
 on:
   push:
@@ -9,10 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.11"]
 
     steps:
       - name: Checkout repository
@@ -23,11 +22,23 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: |
+          set -e
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
 
       - name: Run tests
         run: pytest -v
+
+      - name: Streamlit smoke test
+        run: streamlit run src/main.py --server.headless true
+
