@@ -6,7 +6,7 @@
     └── 📁.vscode
         ├── settings.json
     └── 📁src
-        └── 📁portfolio_optimization.egg-info
+        └── 📁portfolio_optimization
             ├── __init__.py
             ├── backtest.py
             ├── config.py
@@ -25,7 +25,5 @@
     ├── app.py
     ├── pyproject.toml
     ├── README.md
-    ├── requirements.txt
-    ├── setup.cfg
-    └── setup.py
+    └── requirements.txt
 ```
