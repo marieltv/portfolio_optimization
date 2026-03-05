@@ -7,16 +7,16 @@ Run with:
 """
 from __future__ import annotations
 
-import streamlit as st
-import pandas as pd
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+import streamlit as st
 from plotly.subplots import make_subplots
 
-from portfolio_optimization.config import BacktestConfig, DEFAULT_CONFIG
+from portfolio_optimization.backtest import BacktestResult, rolling_backtest
+from portfolio_optimization.config import DEFAULT_CONFIG, BacktestConfig
 from portfolio_optimization.data import download_prices, compute_returns
-from portfolio_optimization.backtest import rolling_backtest, BacktestResult
 from portfolio_optimization.metrics import performance_summary
 
 # ---------------------------------------------------------------------------
@@ -30,7 +30,17 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# Sidebar — user inputs
+# Colour palette — one consistent colour per strategy across all charts
+# ---------------------------------------------------------------------------
+STRATEGY_COLORS = {
+    "EqualWeight": "#636EFA",
+    "MinVariance":  "#EF553B",
+    "RiskParity":   "#00CC96",
+    "RegMaxSharpe": "#FFA15A",
+}
+
+# ---------------------------------------------------------------------------
+# Sidebar
 # ---------------------------------------------------------------------------
 st.sidebar.title("⚙️ Settings")
 
@@ -79,18 +89,9 @@ st.caption(
 )
 
 # ---------------------------------------------------------------------------
-# Colour palette — one consistent colour per strategy across all charts
+# Helpers
 # ---------------------------------------------------------------------------
-STRATEGY_COLORS = {
-    "EqualWeight": "#636EFA",
-    "MinVariance":  "#EF553B",
-    "RiskParity":   "#00CC96",
-    "RegMaxSharpe": "#FFA15A",
-}
 
-# ---------------------------------------------------------------------------
-# Helper: drawdown series
-# ---------------------------------------------------------------------------
 def _drawdown_series(returns: pd.Series) -> pd.Series:
     cumulative = (1 + returns).cumprod()
     peak = cumulative.cummax()
@@ -98,7 +99,7 @@ def _drawdown_series(returns: pd.Series) -> pd.Series:
 
 
 # ---------------------------------------------------------------------------
-# Plotting helpers — all return Plotly figures
+# Chart functions
 # ---------------------------------------------------------------------------
 
 def plot_equity_curves(results: dict[str, pd.Series]) -> go.Figure:
@@ -106,16 +107,12 @@ def plot_equity_curves(results: dict[str, pd.Series]) -> go.Figure:
     for name, r in results.items():
         equity = (1 + r).cumprod()
         fig.add_trace(go.Scatter(
-            x=equity.index, y=equity.values,
-            name=name,
-            mode="lines",
+            x=equity.index, y=equity.values, name=name, mode="lines",
             line=dict(color=STRATEGY_COLORS.get(name), width=2),
             hovertemplate="%{x|%Y-%m-%d}<br>%{y:.3f}<extra>" + name + "</extra>",
         ))
     fig.update_layout(
-        title="Cumulative Return (out-of-sample)",
-        xaxis_title=None,
-        yaxis_title="Portfolio value (start = 1)",
+        title="Cumulative Return (out-of-sample)", yaxis_title="Portfolio value (start = 1)",
         hovermode="x unified",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(l=0, r=0, t=50, b=0),
@@ -128,18 +125,12 @@ def plot_drawdowns(results: dict[str, pd.Series]) -> go.Figure:
     for name, r in results.items():
         dd = _drawdown_series(r)
         fig.add_trace(go.Scatter(
-            x=dd.index, y=dd.values * 100,
-            name=name,
-            mode="lines",
-            fill="tozeroy",
+            x=dd.index, y=dd.values * 100, name=name, mode="lines", fill="tozeroy",
             line=dict(color=STRATEGY_COLORS.get(name), width=1.5),
             hovertemplate="%{x|%Y-%m-%d}<br>%{y:.2f}%<extra>" + name + "</extra>",
         ))
     fig.update_layout(
-        title="Drawdown (%)",
-        xaxis_title=None,
-        yaxis_title="Drawdown (%)",
-        yaxis_tickformat=".1f",
+        title="Drawdown (%)", yaxis_title="Drawdown (%)",
         hovermode="x unified",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(l=0, r=0, t=50, b=0),
@@ -157,22 +148,57 @@ def plot_rolling_sharpe(
     daily_rf = rf / trading_days
     for name, r in results.items():
         excess = r - daily_rf
-        roll_mean = excess.rolling(window).mean() * trading_days
-        roll_std  = r.rolling(window).std() * np.sqrt(trading_days)
-        roll_sharpe = roll_mean / roll_std.replace(0, np.nan)
+        roll_sharpe = (
+            excess.rolling(window).mean() * trading_days
+            / (r.rolling(window).std() * np.sqrt(trading_days)).replace(0, np.nan)
+        )
         fig.add_trace(go.Scatter(
-            x=roll_sharpe.index, y=roll_sharpe.values,
-            name=name,
-            mode="lines",
+            x=roll_sharpe.index, y=roll_sharpe.values, name=name, mode="lines",
             line=dict(color=STRATEGY_COLORS.get(name), width=2),
             hovertemplate="%{x|%Y-%m-%d}<br>Sharpe: %{y:.2f}<extra>" + name + "</extra>",
         ))
     fig.add_hline(y=0, line_dash="dash", line_color="grey", line_width=1)
     fig.update_layout(
-        title=f"Rolling {window}-Day Sharpe Ratio",
-        xaxis_title=None,
-        yaxis_title="Sharpe ratio",
+        title=f"Rolling {window}-Day Sharpe Ratio", yaxis_title="Sharpe ratio",
         hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=0, r=0, t=50, b=0),
+    )
+    return fig
+
+
+def plot_return_distribution(results: dict[str, pd.Series]) -> go.Figure:
+    fig = go.Figure()
+    for name, r in results.items():
+        fig.add_trace(go.Violin(
+            y=r.values * 100, name=name, box_visible=True, meanline_visible=True,
+            fillcolor=STRATEGY_COLORS.get(name), opacity=0.7, line_color="white",
+            hovertemplate="<b>" + name + "</b><br>%{y:.2f}%<extra></extra>",
+        ))
+    fig.add_hline(y=0, line_dash="dash", line_color="grey", line_width=1)
+    fig.update_layout(
+        title="Daily Return Distribution (%)", yaxis_title="Daily return (%)",
+        showlegend=False, margin=dict(l=0, r=0, t=50, b=0),
+    )
+    return fig
+
+
+def plot_metric_comparison(
+    summary: pd.DataFrame,
+    metrics: list[str],
+    title: str,
+) -> go.Figure:
+    fig = go.Figure()
+    for strategy in summary.index:
+        fig.add_trace(go.Bar(
+            name=strategy,
+            x=metrics,
+            y=summary.loc[strategy, metrics].values,
+            marker_color=STRATEGY_COLORS.get(strategy),
+            hovertemplate="%{x}: %{y:.3f}<extra>" + strategy + "</extra>",
+        ))
+    fig.update_layout(
+        barmode="group", title=title,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(l=0, r=0, t=50, b=0),
     )
@@ -183,9 +209,9 @@ def plot_weights_over_time(
     weight_history: dict[str, pd.DataFrame],
     tickers: list[str],
 ) -> go.Figure:
-    n_strategies = len(weight_history)
+    n = len(weight_history)
     fig = make_subplots(
-        rows=1, cols=n_strategies,
+        rows=1, cols=n,
         subplot_titles=list(weight_history.keys()),
         shared_yaxes=True,
     )
@@ -194,45 +220,17 @@ def plot_weights_over_time(
         for t_idx, ticker in enumerate(tickers):
             fig.add_trace(
                 go.Bar(
-                    x=wdf.index,
-                    y=wdf[ticker].values * 100,
-                    name=ticker,
-                    marker_color=colors[t_idx],
+                    x=wdf.index, y=wdf[ticker].values * 100,
+                    name=ticker, marker_color=colors[t_idx],
                     showlegend=(col_idx == 1),
                     hovertemplate="%{x|%Y-%m-%d}<br>" + ticker + ": %{y:.1f}%<extra></extra>",
                 ),
                 row=1, col=col_idx,
             )
     fig.update_layout(
-        barmode="stack",
-        title="Portfolio Weights Over Time (%)",
-        yaxis_title="Weight (%)",
+        barmode="stack", title="Portfolio Weights Over Time (%)", yaxis_title="Weight (%)",
         legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1),
-        margin=dict(l=0, r=0, t=80, b=0),
-        height=380,
-    )
-    return fig
-
-
-def plot_return_distribution(results: dict[str, pd.Series]) -> go.Figure:
-    fig = go.Figure()
-    for name, r in results.items():
-        fig.add_trace(go.Violin(
-            y=r.values * 100,
-            name=name,
-            box_visible=True,
-            meanline_visible=True,
-            fillcolor=STRATEGY_COLORS.get(name),
-            opacity=0.7,
-            line_color="white",
-            hovertemplate="<b>" + name + "</b><br>%{y:.2f}%<extra></extra>",
-        ))
-    fig.add_hline(y=0, line_dash="dash", line_color="grey", line_width=1)
-    fig.update_layout(
-        title="Daily Return Distribution (%)",
-        yaxis_title="Daily return (%)",
-        showlegend=False,
-        margin=dict(l=0, r=0, t=50, b=0),
+        margin=dict(l=0, r=0, t=80, b=0), height=380,
     )
     return fig
 
@@ -240,55 +238,106 @@ def plot_return_distribution(results: dict[str, pd.Series]) -> go.Figure:
 def plot_correlation_heatmap(returns: pd.DataFrame) -> go.Figure:
     corr = returns.corr().round(2)
     fig = go.Figure(go.Heatmap(
-        z=corr.values,
-        x=corr.columns.tolist(),
-        y=corr.index.tolist(),
-        colorscale="RdBu_r",
-        zmid=0,
-        zmin=-1, zmax=1,
-        text=corr.values,
-        texttemplate="%{text}",
+        z=corr.values, x=corr.columns.tolist(), y=corr.index.tolist(),
+        colorscale="RdBu_r", zmid=0, zmin=-1, zmax=1,
+        text=corr.values, texttemplate="%{text}",
         hovertemplate="%{y} / %{x}<br>ρ = %{z:.2f}<extra></extra>",
     ))
     fig.update_layout(
         title="Asset Return Correlation",
+        margin=dict(l=0, r=0, t=50, b=0), height=350,
+    )
+    return fig
+
+
+def plot_predicted_vs_actual(
+    predicted: dict[str, pd.DataFrame],
+    metric: str,
+    title: str,
+    y_label: str,
+) -> go.Figure:
+    """
+    For each strategy: dashed line = predicted, solid line = actual.
+    Shaded area fills the gap between them.
+
+    metric must be one of: "sharpe", "sortino", "vol"
+    """
+    pred_col   = f"pred_{metric}"
+    actual_col = f"actual_{metric}"
+
+    fig = go.Figure()
+
+    for name, df in predicted.items():
+        color = STRATEGY_COLORS.get(name, "#888")
+
+        # Predicted — dashed
+        fig.add_trace(go.Scatter(
+            x=df.index, y=df[pred_col],
+            name=f"{name} predicted",
+            mode="lines",
+            line=dict(color=color, dash="dash", width=1.5),
+            legendgroup=name,
+            hovertemplate="%{x|%Y-%m-%d}<br>Predicted: %{y:.2f}<extra>" + name + "</extra>",
+        ))
+
+        # Actual — solid
+        fig.add_trace(go.Scatter(
+            x=df.index, y=df[actual_col],
+            name=f"{name} actual",
+            mode="lines",
+            line=dict(color=color, width=2.5),
+            legendgroup=name,
+            hovertemplate="%{x|%Y-%m-%d}<br>Actual: %{y:.2f}<extra>" + name + "</extra>",
+        ))
+
+        # Shaded gap
+        x_fill = list(df.index) + list(df.index[::-1])
+        y_fill = list(df[pred_col].fillna(0)) + list(df[actual_col].fillna(0)[::-1])
+        fig.add_trace(go.Scatter(
+            x=x_fill, y=y_fill,
+            fill="toself", fillcolor=color, opacity=0.08,
+            line=dict(width=0), showlegend=False, hoverinfo="skip",
+            legendgroup=name,
+        ))
+
+    fig.add_hline(y=0, line_dash="dot", line_color="grey", line_width=1)
+    fig.update_layout(
+        title=title, yaxis_title=y_label,
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(l=0, r=0, t=50, b=0),
-        height=350,
+        height=420,
     )
     return fig
 
 
 def style_summary_table(df: pd.DataFrame) -> pd.io.formats.style.Styler:
-    """Colour-code metrics: green = good, red = bad."""
     pct_cols = ["CAGR", "Volatility", "MaxDrawdown", "CVaR95"]
-    styled = df.copy()
 
-    # Format as percentages where appropriate
-    fmt = {
-        col: "{:.1f}%" for col in pct_cols if col in styled.columns
-    }
-    fmt.update({
-        col: "{:.2f}" for col in styled.columns if col not in pct_cols
-    })
+    def fmt(col):
+        if col in pct_cols:
+            return lambda v: f"{v * 100:.1f}%"
+        return lambda v: f"{v:.2f}"
 
-    return (
-        styled.style
-        .format({k: (lambda v, f=f: f.format(v * 100) if "%" in f else f.format(v))
-                 for k, f in fmt.items()})
-        .background_gradient(subset=["Sharpe", "Sortino", "Calmar"], cmap="Greens")
-        .background_gradient(subset=["MaxDrawdown", "CVaR95"], cmap="Reds_r")
-        .background_gradient(subset=["CAGR"], cmap="Blues")
-    )
+    formatters = {col: fmt(col) for col in df.columns}
+    styler = df.style.format(formatters)
+    if "Sharpe" in df.columns and "Sortino" in df.columns and "Calmar" in df.columns:
+        styler = styler.background_gradient(subset=["Sharpe", "Sortino", "Calmar"], cmap="Greens")
+    if "MaxDrawdown" in df.columns and "CVaR95" in df.columns:
+        styler = styler.background_gradient(subset=["MaxDrawdown", "CVaR95"], cmap="Reds_r")
+    if "CAGR" in df.columns:
+        styler = styler.background_gradient(subset=["CAGR"], cmap="Blues")
+    return styler
+
 
 # ---------------------------------------------------------------------------
-# Main execution
+# Gate
 # ---------------------------------------------------------------------------
 if not run_button:
     st.info("Configure your universe and parameters in the sidebar, then click **▶ Run Backtest**.")
     st.stop()
 
 tickers = [t.strip().upper() for t in tickers_input.split(",") if t.strip()]
-
 if len(tickers) < 2:
     st.error("Please enter at least 2 tickers.")
     st.stop()
@@ -303,7 +352,9 @@ cfg = BacktestConfig(
     risk_free_rate=rf_rate,
 )
 
-# --- Download & compute ---
+# ---------------------------------------------------------------------------
+# Download & backtest
+# ---------------------------------------------------------------------------
 with st.spinner("Downloading price data…"):
     try:
         prices = download_prices(cfg.tickers, cfg.start_date, cfg.end_date)
@@ -311,9 +362,8 @@ with st.spinner("Downloading price data…"):
         st.error(f"Data download failed: {e}")
         st.stop()
 
-returns = compute_returns(prices, log=False)   # simple returns
+returns = compute_returns(prices)
 
-# --- Run backtest ---
 with st.spinner("Running backtest…"):
     backtest: BacktestResult = rolling_backtest(returns, cfg=cfg)
 
@@ -324,28 +374,28 @@ summary = performance_summary(
 )
 
 # ---------------------------------------------------------------------------
-# Layout — three tabs
+# Tabs
 # ---------------------------------------------------------------------------
-tab_perf, tab_weights, tab_assets = st.tabs([
-    "📊 Performance", "⚖️ Weights", "🔍 Asset Analysis"
+tab_perf, tab_pred, tab_weights, tab_assets = st.tabs([
+    "📊 Performance",
+    "🎯 Predicted vs Actual",
+    "⚖️ Weights",
+    "🔍 Asset Analysis",
 ])
 
-# ============================= TAB 1: Performance ============================
+# ================================================================ TAB 1: Performance
 with tab_perf:
 
-    # KPI cards — top row
     best_sharpe = summary["Sharpe"].idxmax()
     best_cagr   = summary["CAGR"].idxmax()
-    low_dd      = summary["MaxDrawdown"].idxmax()   # least negative = best
+    low_dd      = summary["MaxDrawdown"].idxmax()
 
-    kpi1, kpi2, kpi3 = st.columns(3)
-    kpi1.metric("Best Sharpe",      best_sharpe,  f"{summary.loc[best_sharpe, 'Sharpe']:.2f}")
-    kpi2.metric("Best CAGR",        best_cagr,    f"{summary.loc[best_cagr,   'CAGR']*100:.1f}%")
-    kpi3.metric("Lowest Drawdown",  low_dd,       f"{summary.loc[low_dd, 'MaxDrawdown']*100:.1f}%")
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Best Sharpe",     best_sharpe, f"{summary.loc[best_sharpe, 'Sharpe']:.2f}")
+    k2.metric("Best CAGR",       best_cagr,   f"{summary.loc[best_cagr,   'CAGR']*100:.1f}%")
+    k3.metric("Lowest Drawdown", low_dd,      f"{summary.loc[low_dd, 'MaxDrawdown']*100:.1f}%")
 
     st.markdown("---")
-
-    # Summary table
     st.subheader("Performance Summary")
     try:
         st.dataframe(style_summary_table(summary), use_container_width=True)
@@ -354,14 +404,12 @@ with tab_perf:
 
     st.markdown("---")
 
-    # Equity curves + drawdown — side by side
     c1, c2 = st.columns(2)
     with c1:
         st.plotly_chart(plot_equity_curves(backtest.returns), use_container_width=True)
     with c2:
         st.plotly_chart(plot_drawdowns(backtest.returns), use_container_width=True)
 
-    # Rolling Sharpe + return distribution — side by side
     c3, c4 = st.columns(2)
     with c3:
         st.plotly_chart(
@@ -372,7 +420,82 @@ with tab_perf:
     with c4:
         st.plotly_chart(plot_return_distribution(backtest.returns), use_container_width=True)
 
-# ============================= TAB 2: Weights ================================
+    st.markdown("---")
+    st.subheader("Strategy Comparison")
+    c5, c6 = st.columns(2)
+    with c5:
+        st.plotly_chart(plot_metric_comparison(
+            summary,
+            metrics=["CAGR", "Sharpe", "Sortino", "Calmar"],
+            title="Return Quality Metrics",
+        ), use_container_width=True)
+    with c6:
+        st.plotly_chart(plot_metric_comparison(
+            summary,
+            metrics=["Volatility", "MaxDrawdown", "CVaR95"],
+            title="Risk Metrics",
+        ), use_container_width=True)
+
+# ================================================================ TAB 2: Predicted vs Actual
+with tab_pred:
+    st.subheader("🎯 Predicted vs Actual — per Rebalance Period")
+    st.caption(
+        "**Dashed** = what the optimiser expected going into each period.  "
+        "**Solid** = what actually happened.  "
+        "The shaded gap reveals how well the optimiser's assumptions held up out-of-sample."
+    )
+
+    st.markdown("---")
+
+    # Sharpe — full width, most important metric
+    st.plotly_chart(
+        plot_predicted_vs_actual(
+            backtest.predicted,
+            metric="sharpe",
+            title="Sharpe Ratio — Predicted vs Actual",
+            y_label="Sharpe ratio",
+        ),
+        use_container_width=True,
+    )
+
+    st.markdown("---")
+
+    # Sortino + Volatility side by side
+    c1, c2 = st.columns(2)
+    with c1:
+        st.plotly_chart(
+            plot_predicted_vs_actual(
+                backtest.predicted,
+                metric="sortino",
+                title="Sortino Ratio — Predicted vs Actual",
+                y_label="Sortino ratio",
+            ),
+            use_container_width=True,
+        )
+    with c2:
+        st.plotly_chart(
+            plot_predicted_vs_actual(
+                backtest.predicted,
+                metric="vol",
+                title="Volatility — Predicted vs Actual",
+                y_label="Annualised volatility",
+            ),
+            use_container_width=True,
+        )
+
+    st.markdown("---")
+    st.subheader("How to read this")
+    st.info(
+        "**Predicted always above actual (optimism bias)** → the optimiser is overfit to the "
+        "training window. This is most visible in RegMaxSharpe which relies on return estimates.\n\n"
+        "**Volatility gap widens in 2022** → the covariance matrix estimated on 2018–2021 "
+        "underestimated post-rate-hike volatility. Risk Parity and MinVariance should show "
+        "smaller gaps than RegMaxSharpe because they do not rely on return estimates.\n\n"
+        "**EqualWeight gap** → serves as a useful baseline. It makes no predictions at all, "
+        "so any gap here comes purely from regime change, not estimation error."
+    )
+
+# ================================================================ TAB 3: Weights
 with tab_weights:
     st.subheader("Portfolio Weights Over Time")
     st.plotly_chart(
@@ -386,7 +509,7 @@ with tab_weights:
         latest = wdf.iloc[-1].sort_values(ascending=False)
         fig = go.Figure(go.Bar(
             x=latest.index, y=latest.values * 100,
-            marker_color=[STRATEGY_COLORS.get(name, "#888")] * len(latest),
+            marker_color=STRATEGY_COLORS.get(name, "#888"),
             hovertemplate="%{x}: %{y:.1f}%<extra></extra>",
         ))
         fig.update_layout(
@@ -409,23 +532,23 @@ with tab_weights:
     )
     st.plotly_chart(fig_to, use_container_width=True)
 
-# ============================= TAB 3: Asset Analysis =========================
+# ================================================================ TAB 4: Asset Analysis
 with tab_assets:
     st.subheader("Asset Correlation Matrix")
     st.plotly_chart(plot_correlation_heatmap(returns), use_container_width=True)
 
     st.subheader("Individual Asset Performance")
-    asset_summary = []
+    asset_rows = []
     for ticker in cfg.tickers:
         r = returns[ticker]
-        asset_summary.append({
-            "Ticker":     ticker,
-            "CAGR":       r.mean() * cfg.trading_days,
-            "Volatility": r.std()  * np.sqrt(cfg.trading_days),
-            "Sharpe":     (r.mean() * cfg.trading_days) / (r.std() * np.sqrt(cfg.trading_days)),
+        asset_rows.append({
+            "Ticker":      ticker,
+            "CAGR":        r.mean() * cfg.trading_days,
+            "Volatility":  r.std()  * np.sqrt(cfg.trading_days),
+            "Sharpe":      (r.mean() * cfg.trading_days) / (r.std() * np.sqrt(cfg.trading_days)),
             "MaxDrawdown": ((1 + r).cumprod() / (1 + r).cumprod().cummax() - 1).min(),
         })
-    asset_df = pd.DataFrame(asset_summary).set_index("Ticker")
+    asset_df = pd.DataFrame(asset_rows).set_index("Ticker")
     st.dataframe(asset_df.round(3), use_container_width=True)
 
     st.subheader("Normalised Price History")
