@@ -114,8 +114,8 @@ def plot_equity_curves(results: dict[str, pd.Series]) -> go.Figure:
     fig.update_layout(
         title="Cumulative Return (out-of-sample)", yaxis_title="Portfolio value (start = 1)",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=0, r=0, t=50, b=0),
+        legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
+        margin=dict(l=0, r=0, t=40, b=60),
     )
     return fig
 
@@ -132,8 +132,8 @@ def plot_drawdowns(results: dict[str, pd.Series]) -> go.Figure:
     fig.update_layout(
         title="Drawdown (%)", yaxis_title="Drawdown (%)",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=0, r=0, t=50, b=0),
+        legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
+        margin=dict(l=0, r=0, t=40, b=60),
     )
     return fig
 
@@ -161,8 +161,8 @@ def plot_rolling_sharpe(
     fig.update_layout(
         title=f"Rolling {window}-Day Sharpe Ratio", yaxis_title="Sharpe ratio",
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=0, r=0, t=50, b=0),
+        legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
+        margin=dict(l=0, r=0, t=40, b=60),
     )
     return fig
 
@@ -199,8 +199,8 @@ def plot_metric_comparison(
         ))
     fig.update_layout(
         barmode="group", title=title,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=0, r=0, t=50, b=0),
+        legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
+        margin=dict(l=0, r=0, t=40, b=60),
     )
     return fig
 
@@ -229,8 +229,8 @@ def plot_weights_over_time(
             )
     fig.update_layout(
         barmode="stack", title="Portfolio Weights Over Time (%)", yaxis_title="Weight (%)",
-        legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1),
-        margin=dict(l=0, r=0, t=80, b=0), height=380,
+        legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
+        margin=dict(l=0, r=0, t=40, b=60), height=380,
     )
     return fig
 
@@ -304,8 +304,8 @@ def plot_predicted_vs_actual(
     fig.update_layout(
         title=title, yaxis_title=y_label,
         hovermode="x unified",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=0, r=0, t=50, b=0),
+        legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
+        margin=dict(l=0, r=0, t=40, b=80),
         height=420,
     )
     return fig
@@ -482,7 +482,7 @@ with tab_pred:
             ),
             use_container_width=True,
         )
-
+""""
     st.markdown("---")
     st.subheader("How to read this")
     st.info(
@@ -494,7 +494,7 @@ with tab_pred:
         "**EqualWeight gap** → serves as a useful baseline. It makes no predictions at all, "
         "so any gap here comes purely from regime change, not estimation error."
     )
-
+"""
 # ================================================================ TAB 3: Weights
 with tab_weights:
     st.subheader("Portfolio Weights Over Time")
