@@ -1,11 +1,6 @@
 """
 Data downloading and preprocessing.
 
-Key improvements over v1:
-- log-return computation added (missing from original despite being imported in app.py)
-- explicit progress=False to suppress yfinance noise
-- validates the downloaded universe matches requested tickers
-- docstrings with parameter descriptions
 """
 from __future__ import annotations
 
