@@ -61,11 +61,13 @@ train_years = st.sidebar.slider(
     "Training window (years)", min_value=1, max_value=10,
     value=DEFAULT_CONFIG.train_window_years,
 )
-max_weight = st.sidebar.slider(
-    "Max weight per asset", min_value=0.10, max_value=1.0,
-    value=DEFAULT_CONFIG.max_weight, step=0.05,
-    format="%.0f%%",
+max_weight_pct = st.sidebar.slider(
+    "Max weight per asset (%)", min_value=10, max_value=100,
+    value=int(DEFAULT_CONFIG.max_weight * 100), step=5,
+    format="%d%%",  # shows 10%, 15%, 30% etc.
 )
+max_weight = max_weight_pct / 100  # convert back to decimal for cfg
+
 rebal_freq = st.sidebar.selectbox(
     "Rebalancing frequency",
     options=["ME", "QE", "YE"],
