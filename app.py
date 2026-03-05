@@ -228,7 +228,7 @@ def plot_weights_over_time(
                 row=1, col=col_idx,
             )
     fig.update_layout(
-        barmode="stack", title="Portfolio Weights Over Time (%)", yaxis_title="Weight (%)",
+        barmode="stack", yaxis_title="Weight (%)",
         legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
         margin=dict(l=0, r=0, t=40, b=60), height=380,
     )
