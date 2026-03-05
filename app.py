@@ -499,13 +499,13 @@ with tab_weights:
             x=latest.index, y=latest.values * 100,
             marker_color=STRATEGY_COLORS.get(name, "#888"),
             hovertemplate="%{x}: %{y:.1f}%<extra></extra>",
-    ))
-    fig.update_layout(
-        yaxis_title="Weight (%)",
-        margin=dict(l=0, r=0, t=10, b=0), height=280,  # t=10 since no title anymore
-    )
-    col.markdown(f"**{name}**")   # strategy name above the chart
-    col.plotly_chart(fig, use_container_width=True)
+        ))
+        fig.update_layout(
+            yaxis_title="Weight (%)",
+            margin=dict(l=0, r=0, t=10, b=0), height=280,  # t=10 since no title anymore
+        )
+        col.markdown(f"**{name}**")   # strategy name above the chart
+        col.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Average Turnover per Rebalance")
     avg_to = {name: s.mean() for name, s in backtest.turnover.items()}
