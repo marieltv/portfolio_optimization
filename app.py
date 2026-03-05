@@ -482,19 +482,7 @@ with tab_pred:
             ),
             use_container_width=True,
         )
-""""
-    st.markdown("---")
-    st.subheader("How to read this")
-    st.info(
-        "**Predicted always above actual (optimism bias)** → the optimiser is overfit to the "
-        "training window. This is most visible in RegMaxSharpe which relies on return estimates.\n\n"
-        "**Volatility gap widens in 2022** → the covariance matrix estimated on 2018–2021 "
-        "underestimated post-rate-hike volatility. Risk Parity and MinVariance should show "
-        "smaller gaps than RegMaxSharpe because they do not rely on return estimates.\n\n"
-        "**EqualWeight gap** → serves as a useful baseline. It makes no predictions at all, "
-        "so any gap here comes purely from regime change, not estimation error."
-    )
-"""
+
 # ================================================================ TAB 3: Weights
 with tab_weights:
     st.subheader("Portfolio Weights Over Time")
@@ -511,12 +499,13 @@ with tab_weights:
             x=latest.index, y=latest.values * 100,
             marker_color=STRATEGY_COLORS.get(name, "#888"),
             hovertemplate="%{x}: %{y:.1f}%<extra></extra>",
-        ))
-        fig.update_layout(
-            title=name, yaxis_title="Weight (%)",
-            margin=dict(l=0, r=0, t=40, b=0), height=280,
-        )
-        col.plotly_chart(fig, use_container_width=True)
+    ))
+    fig.update_layout(
+        yaxis_title="Weight (%)",
+        margin=dict(l=0, r=0, t=10, b=0), height=280,  # t=10 since no title anymore
+    )
+    col.markdown(f"**{name}**")   # strategy name above the chart
+    col.plotly_chart(fig, use_container_width=True)
 
     st.subheader("Average Turnover per Rebalance")
     avg_to = {name: s.mean() for name, s in backtest.turnover.items()}
