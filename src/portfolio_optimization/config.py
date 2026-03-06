@@ -42,5 +42,8 @@ class BacktestConfig:
         """Rolling look-back expressed in trading days."""
         return self.train_window_years * self.trading_days
 
-
+    @property
+    def min_weight(self) -> float:
+        """Minimum feasible per-asset weight given the universe size."""
+        return round(1 / len(self.tickers), 2)
 DEFAULT_CONFIG = BacktestConfig()
