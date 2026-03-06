@@ -5,6 +5,10 @@ Run with:
     pip install -e .(locally if you use virtual environment)
     streamlit run app.py
 """
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+
 from __future__ import annotations
 
 import numpy as np
