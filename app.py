@@ -72,7 +72,7 @@ min_weight = round(1 / n, 2)
 max_weight_pct = st.sidebar.slider(
     "Max weight per asset (%)",
     min_value=int(min_weight * 100),
-    max_value=100,
+    max_value=50,
     value=max(int(DEFAULT_CONFIG.max_weight * 100), int(min_weight * 100)),
     step=5,
     format="%d%%",
