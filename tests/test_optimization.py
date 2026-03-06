@@ -29,12 +29,12 @@ def test_equal_weight_properties():
 
 
 def test_minimum_variance_sums_to_one():
-    w = MinimumVariance()(MEAN, COV)
+    w = MinimumVariance(max_weight=0.5)(MEAN, COV)
     assert np.allclose(w.sum(), 1.0, atol=1e-6)
 
 
 def test_minimum_variance_non_negative():
-    w = MinimumVariance()(MEAN, COV)
+    w = MinimumVariance(max_weight=0.5)(MEAN, COV)
     assert np.all(w >= -1e-8)
 
 
@@ -57,12 +57,12 @@ def test_risk_parity_identity_equals_equal_weight():
 
 
 def test_regularised_max_sharpe_sums_to_one():
-    w = RegularisedMaxSharpe()(MEAN, COV)
+    w = RegularisedMaxSharpe(max_weight=0.5)(MEAN, COV)
     assert np.allclose(w.sum(), 1.0, atol=1e-6)
 
 
 def test_regularised_max_sharpe_non_negative():
-    w = RegularisedMaxSharpe()(MEAN, COV)
+    w = RegularisedMaxSharpe(max_weight=0.5)(MEAN, COV)
     assert np.all(w >= -1e-8)
 
 
