@@ -12,9 +12,9 @@ from portfolio_optimization.optimization import (
 # Shared fixtures
 MEAN = np.array([0.10, 0.12, 0.08])
 COV = np.array([
-    [0.10, 0.02, 0.01],
-    [0.02, 0.08, 0.01],
-    [0.01, 0.01, 0.07],
+    [0.04, 0.008, 0.004],
+    [0.008, 0.032, 0.004],
+    [0.004, 0.004, 0.028],
 ])
 COV_IDENTITY_4 = np.eye(4)
 MEAN_4 = np.array([0.10, 0.12, 0.08, 0.11])
