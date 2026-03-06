@@ -1,4 +1,4 @@
-name: Portfolio CI
+name: CI
 
 on:
   push:
@@ -9,38 +9,30 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
 
       - name: Cache pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-
 
-      - name: Install dependencies
+      - name: Install package and dev dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
-          pip install -r requirements.txt
-          pip install pytest streamlit
+          pip install -e ".[dev]"
 
       - name: Run tests
-        run: pytest -v
+        run: pytest -v --tb=short
 
-      - name: Streamlit smoke test
-        run: streamlit run src/portfolio_optimization/main.py --server.headless true
+      - name: Streamlit import check
+        run: python -c "import app"
 
 

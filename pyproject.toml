@@ -14,6 +14,7 @@ dependencies = [
     "yfinance>=0.2.55",
     "matplotlib>=3.8",
     "streamlit>=1.32",
+    "plotly>=5.20",
 ]
 
 [project.optional-dependencies]
