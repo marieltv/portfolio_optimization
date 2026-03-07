@@ -18,45 +18,52 @@ The predicted vs actual framework makes estimation error visible and measurable,
 ---
 ## 2. Solution Overview & Technology Stack
 
-### Stratigies 
+## Strategies 
 
-### Methodology
+Because return estimates are noisy, this project focused on risk-based and regularized portfolio optimization and  all methods were evaluated using rolling out-of-sample backtests.
 
-The evaluation follows a walk-forward backtesting framework designed to simulate realistic portfolio management.
+| Strategy | Estimation inputs | Purpose | Strength | Weakness | 
+|---|---|--- |---|---|
+| Equal Weight | None — 1/N baseline | Baseline | Very robust baseline |Ignores risk structure |
+| Minimum Variance | Covariance only | Risk control | Good downside protection | Sensitive to covariance estimation |
+| Risk Parity | Covariance only | Robust allocation | Diversified risk exposure | Requires stable covariance |
+| Regularised Max Sharpe | Mean + Covariance, L2 penalty | Active tilt | Strong theoretical foundation | Unstable with noisy returns |
 
-#### Training phase
+## Metrics
 
-- Historical asset returns are used to estimate expected returns and covariance matrix.
+Each strategy is evaluated using standard portfolio performance metrics:
 
-- Portfolio weights are computed using each optimization strategy.
+` Annualized return `  `Annualized volatility` ` Sharpe ratio` `Maximum drawdown` ` Portfolio turnover`
 
-#### Testing phase
+This enables comparison of both performance and risk stability.
 
-- The portfolio is held for a fixed rebalancing period.
+## Methodology
 
-- Realized returns and risk metrics are recorded.
+The evaluation follows a strict walk-forward framework — no look-ahead bias, no in-sample fitting on test data.
+``` mermaid
+flowchart LR
+    A["Initial training window<br>(historical returns)"] --> B["Estimate mean returns<br>and covariance matrix"]
+    B --> C["Compute portfolio weights<br>for each strategy"]
+    C --> D["Apply weights to<br>next rebalance period"]
+    D --> E["Record realized returns<br>and risk metrics"]
+    E --> F{Next rebalance<br>date?}
+    F -->|Yes| G["Extend training window<br>with new data"]
+    G --> B
+    F -->|No| H["Aggregate results<br>and compare strategies"]
+```
 
-#### Walk-forward process
-
-- Train model on historical window
-
-- Compute optimal portfolio weights
-
-- Apply weights to next out-of-sample period
-
-- Expand training window
-
-- Repeat
-
-This avoids look-ahead bias and evaluates strategies under realistic deployment conditions.
+**Training** — estimate expected returns and covariance matrix from the rolling 4-year window.  
+**Weights** — each strategy computes its allocation independently from the same inputs.  
+**Test** — weights are held fixed until the next rebalance. No adjustments, no peeking.  
+**Roll** — window moves forward one month and the cycle repeats through the entire out-of-sample period.
 
 ---
-#### Stack
+## Stack
 `Python 3.11` · `scipy` · `pandas` · `numpy` · `yfinance` · `Streamlit` · `Plotly` · `pytest` · `GitHub Actions`
 
 ---- 
 
-#### Project folder
+## Project folder
 
 ```
 └── 📁portfolio_optimization
@@ -106,3 +113,4 @@ streamlit run app.py
 ```bash
 pytest -v
 ```
+
