@@ -63,7 +63,7 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("Backtest parameters")
 
 train_years = st.sidebar.slider(
-    "Training window (years)", min_value=1, max_value=10,
+    "Training window (years)", min_value=1, max_value=7,
     value=DEFAULT_CONFIG.train_window_years,
 )
 
@@ -84,6 +84,22 @@ max_weight_pct = st.sidebar.slider(
 )
 st.sidebar.caption(f"Min {int(min_weight * 100)}% with {n} assets")
 max_weight = max_weight_pct / 100
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("Shrinkage estimators")
+
+use_ledoit_wolf = st.sidebar.toggle(
+    "Ledoit-Wolf (covariance)",
+    value=False,
+    help="Shrinks sample covariance toward a structured target. "
+         "Reduces estimation error, improves volatility prediction.",
+)
+use_james_stein = st.sidebar.toggle(
+    "James-Stein (mean returns)",
+    value=False,
+    help="Shrinks individual asset means toward the grand mean. "
+         "Reduces impact of extreme return estimates on RegMaxSharpe.",
+)
 
 rebal_freq = st.sidebar.selectbox(
     "Rebalancing frequency",

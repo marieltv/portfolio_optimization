@@ -9,6 +9,7 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+from sklearn.covariance import LedoitWolf
 
 from portfolio_optimization.config import BacktestConfig, DEFAULT_CONFIG
 from portfolio_optimization.optimization import (
@@ -21,6 +22,45 @@ from portfolio_optimization.optimization import (
 logger = logging.getLogger(__name__)
 
 _FALLBACK = EqualWeight()
+
+
+# ---------------------------------------------------------------------------
+# Shrinkage estimators
+# ---------------------------------------------------------------------------
+
+def _ledoit_wolf_cov(train: pd.DataFrame, trading_days: int) -> np.ndarray:
+    """
+    Ledoit-Wolf shrinkage estimator for the covariance matrix.
+    Shrinks the sample covariance toward a structured target,
+    reducing estimation error in small samples.
+    """
+    lw = LedoitWolf().fit(train.values)
+    return lw.covariance_ * trading_days
+
+
+def _james_stein_mean(train: pd.DataFrame, trading_days: int) -> np.ndarray:
+    """
+    James-Stein shrinkage estimator for the mean return vector.
+    Shrinks individual asset means toward the grand mean,
+    reducing the impact of extreme return estimates.
+    """
+    mu = train.mean().values * trading_days
+    n = len(mu)
+
+    if n <= 2:
+        return mu
+
+    grand_mean = mu.mean()
+    mu_centered = mu - grand_mean
+    norm_sq = float(mu_centered @ mu_centered)
+
+    if norm_sq < 1e-12:
+        return mu
+
+    sigma_sq = float(train.var().mean()) * trading_days / len(train)
+    alpha = min((n - 2) * sigma_sq / (n * norm_sq), 1.0)
+
+    return grand_mean + (1 - alpha) * mu_centered
 
 
 # ---------------------------------------------------------------------------
@@ -84,11 +124,10 @@ def rolling_backtest(
     daily_rf   = cfg.risk_free_rate / cfg.trading_days
 
     rebalance_dates  = returns.resample(cfg.rebalance_frequency).last().index
-    first_valid_date = returns.index[train_days]  # no rebalancing before training window is full
+    first_valid_date = returns.index[train_days]
 
     for i, rebalance_date in enumerate(rebalance_dates):
 
-        # Skip until we have a full training window
         if rebalance_date < first_valid_date:
             continue
 
@@ -100,7 +139,6 @@ def rolling_backtest(
             logger.warning("Skipping %s — only %d training rows.", rebalance_date, len(train))
             continue
 
-        # Test window: current rebalance → next rebalance (exclusive)
         next_date    = rebalance_dates[i + 1] if i + 1 < len(rebalance_dates) else returns.index[-1]
         test_end_loc = returns.index.searchsorted(next_date, side="right")
         test = returns.iloc[train_end_loc:test_end_loc]
@@ -108,9 +146,14 @@ def rolling_backtest(
         if test.empty:
             continue
 
-        # Annualised estimation inputs
-        mean_ann = train.mean().values * cfg.trading_days
-        cov_ann  = train.cov().values  * cfg.trading_days
+        # ----------------------------------------------------------------
+        # Estimation — apply shrinkage if configured
+        # ----------------------------------------------------------------
+        cov_ann  = _ledoit_wolf_cov(train, cfg.trading_days) if cfg.use_ledoit_wolf \
+                   else train.cov().values * cfg.trading_days
+
+        mean_ann = _james_stein_mean(train, cfg.trading_days) if cfg.use_james_stein \
+                   else train.mean().values * cfg.trading_days
 
         rebalance_index.append(rebalance_date)
 
@@ -125,7 +168,7 @@ def rolling_backtest(
                 w = _FALLBACK(mean_ann, cov_ann)
 
             # ----------------------------------------------------------------
-            # Predicted metrics — computed from training window + weights
+            # Predicted metrics
             # ----------------------------------------------------------------
             pred_ret = float(w @ mean_ann)
             pred_vol = float(np.sqrt(max(w @ cov_ann @ w, 1e-12)))
@@ -143,7 +186,7 @@ def rolling_backtest(
             )
 
             # ----------------------------------------------------------------
-            # Actual metrics — realised over the test window
+            # Actual metrics
             # ----------------------------------------------------------------
             port_returns = pd.Series(test.values @ w, index=test.index)
 
@@ -165,7 +208,7 @@ def rolling_backtest(
             )
 
             # ----------------------------------------------------------------
-            # Store everything
+            # Store
             # ----------------------------------------------------------------
             result.returns[name].extend(port_returns.tolist())
 
@@ -187,7 +230,7 @@ def rolling_backtest(
             })
 
     # -----------------------------------------------------------------------
-    # Assemble final results
+    # Assemble
     # -----------------------------------------------------------------------
     n_oos     = len(next(iter(result.returns.values())))
     oos_start = rebalance_index[0] if rebalance_index else returns.index[train_days]

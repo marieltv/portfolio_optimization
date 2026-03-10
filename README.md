@@ -101,7 +101,7 @@ This ensures the results can be independently verified and extended.
 
 ---
 ## Stack
-`Python 3.11` · `scipy (SLSQP)` · `pandas` · `numpy` · `yfinance` · `Streamlit` · `Plotly` · `pytest` · `GitHub Actions`
+`Python 3.11` · `scipy` · `scikit-learn` · `pandas` · `numpy` · `yfinance` · `Streamlit` · `Plotly` · `pytest` · `GitHub Actions`
 
 ---- 
 

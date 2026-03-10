@@ -24,6 +24,12 @@ class BacktestConfig:
     rebalance_frequency : pandas offset alias ("ME"=month-end, "QE"=quarter).
     max_weight : per-asset upper bound (long-only constraint).
     l2_penalty : L2 regularisation strength for regularised Max-Sharpe.
+    use_ledoit_wolf:
+        If True, apply Ledoit-Wolf shrinkage to the covariance matrix
+        estimate instead of using the raw sample covariance.
+    use_james_stein:
+        If True, apply James-Stein shrinkage to the mean return vector
+        instead of using the raw sample mean.
     """
     tickers: List[str] = field(
         default_factory=lambda: ["BA", "NOC", "LMT", "RTX", "AXON", "GD"]
@@ -31,11 +37,13 @@ class BacktestConfig:
     start_date: str = "2018-01-01"
     end_date: str = "2026-01-01"
     trading_days: int = 252
-    risk_free_rate: float = 0.0
+    risk_free_rate: float = 0.0  
     train_window_years: int = 4
     rebalance_frequency: str = "ME"   # pandas ≥ 2.2: "ME" not deprecated "M"
     max_weight: float = 0.30
     l2_penalty: float = 0.1
+    use_ledoit_wolf: bool = False
+    use_james_stein: bool = False
 
     @property
     def train_window_days(self) -> int:
