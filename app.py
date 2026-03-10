@@ -333,13 +333,16 @@ def prediction_error_table(predicted: dict[str, pd.DataFrame]) -> pd.DataFrame:
     rows = []
     for name, df in predicted.items():
         rows.append({
-            "Strategy":       name,
-            "Sharpe MAE":     (df["pred_sharpe"]  - df["actual_sharpe"]).abs().mean(),
-            "Sharpe Bias":    (df["pred_sharpe"]  - df["actual_sharpe"]).mean(),
-            "Sortino MAE":    (df["pred_sortino"] - df["actual_sortino"]).abs().mean(),
-            "Sortino Bias":   (df["pred_sortino"] - df["actual_sortino"]).mean(),
-            "Vol MAE":        (df["pred_vol"]     - df["actual_vol"]).abs().mean(),
-            "Vol Bias":       (df["pred_vol"]     - df["actual_vol"]).mean(),
+            "Strategy":           name,
+            "Sharpe Spearman":    df["pred_sharpe"].corr(df["actual_sharpe"],   method="spearman"),
+            "Sharpe Bias":        (df["pred_sharpe"]  - df["actual_sharpe"]).mean(),
+            "Sharpe MAE":         (df["pred_sharpe"]  - df["actual_sharpe"]).abs().mean(),
+            "Sortino Spearman":   df["pred_sortino"].corr(df["actual_sortino"], method="spearman"),
+            "Sortino Bias":       (df["pred_sortino"] - df["actual_sortino"]).mean(),
+            "Sortino MAE":        (df["pred_sortino"] - df["actual_sortino"]).abs().mean(),
+            "Vol Spearman":       df["pred_vol"].corr(df["actual_vol"],         method="spearman"),
+            "Vol Bias":           (df["pred_vol"]     - df["actual_vol"]).mean(),
+            "Vol MAE":            (df["pred_vol"]     - df["actual_vol"]).abs().mean(),
         })
     return pd.DataFrame(rows).set_index("Strategy")
 
@@ -356,7 +359,8 @@ def style_summary_table(df: pd.DataFrame) -> pd.io.formats.style.Styler:
     if "Sharpe" in df.columns and "Sortino" in df.columns and "Calmar" in df.columns:
         styler = styler.background_gradient(subset=["Sharpe", "Sortino", "Calmar"], cmap="Greens")
     if "MaxDrawdown" in df.columns and "CVaR95" in df.columns:
-        styler = styler.background_gradient(subset=["MaxDrawdown", "CVaR95"], cmap="Reds_r")
+        risk_cols = [c for c in ["Volatility", "MaxDrawdown", "CVaR95"] if c in df.columns]
+        styler = styler.background_gradient(subset=risk_cols, cmap="Reds_r")
     if "CAGR" in df.columns:
         styler = styler.background_gradient(subset=["CAGR"], cmap="Blues")
     return styler
@@ -477,11 +481,15 @@ with tab_pred:
     st.dataframe(
         err_df.style
             .background_gradient(
-                subset=["Sharpe MAE", "Sortino MAE", "Vol MAE"], 
+                subset=["Sharpe Spearman", "Sortino Spearman", "Vol Spearman"],
+                cmap="Greens"
+            )
+            .background_gradient(
+                subset=["Sharpe MAE", "Sortino MAE", "Vol MAE"],
                 cmap="Reds"
             )
             .background_gradient(
-                subset=["Sharpe Bias", "Sortino Bias", "Vol Bias"], 
+                subset=["Sharpe Bias", "Sortino Bias", "Vol Bias"],
                 cmap="RdYlGn_r"
             )
             .format("{:.3f}"),
