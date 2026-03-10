@@ -101,6 +101,7 @@ use_james_stein = st.sidebar.toggle(
          "Reduces impact of extreme return estimates on RegMaxSharpe.",
 )
 
+st.sidebar.markdown("---")
 rebal_freq = st.sidebar.selectbox(
     "Rebalancing frequency",
     options=["ME", "QE", "YE"],
@@ -108,7 +109,6 @@ rebal_freq = st.sidebar.selectbox(
     index=0,
 )
 
-st.sidebar.markdown("---")
 rf_rate = st.sidebar.number_input(
     "Risk-free rate (annual %)", min_value=0.0, max_value=20.0,
     value=DEFAULT_CONFIG.risk_free_rate * 100, step=0.25,
