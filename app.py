@@ -402,6 +402,8 @@ cfg = BacktestConfig(
     max_weight=max_weight,
     rebalance_frequency=rebal_freq,
     risk_free_rate=rf_rate,
+    use_ledoit_wolf=use_ledoit_wolf,  
+    use_james_stein=use_james_stein,
 )
 
 # ---------------------------------------------------------------------------

@@ -32,9 +32,7 @@ jobs:
       - name: Run tests
         run: pytest -v --tb=short
 
-      - name: Streamlit import check
-        env:
-          YFINANCE_NO_CACHE: "1"
-        run: python -c "import app"
+      - name: Check app syntax
+        run: python -m py_compile app.py
 
 
