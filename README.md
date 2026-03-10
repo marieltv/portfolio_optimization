@@ -42,7 +42,10 @@ Each strategy is evaluated across return, risk, and efficiency dimensions:
 
 **Turnover** is tracked separately per rebalance — higher turnover means higher transaction costs in production.
 
+To mitigate estimation error in portfolio inputs, the framework optionally applies shrinkage to both expected returns and the covariance matrix. This allows to explore how different levels of regularization affect portfolio stability and out-of-sample performance.
+
 Additionally, each rebalance records **predicted vs realised** Sharpe, Sortino, and Volatility — measuring how accurately each strategy anticipated its own risk-adjusted performance.
+
 
 ---
 ## Methodology
@@ -159,3 +162,24 @@ pytest -v
 ## Results
 Results vary by universe and configuration. The dashboard exposes the full metric breakdown — CAGR, Sharpe, Sortino, Calmar, Max Drawdown, CVaR — alongside the predicted vs actual analysis per rebalance period.
 
+Sharpe and Sortino predictions are flat and near-constant — a direct consequence of estimating expected returns from a multi-year rolling window. This is not a modelling failure. It reflects a fundamental property of equity returns: covariance is forecastable, mean returns are not. The value of these strategies lies in risk budgeting and drawdown control, not in predicting next month's risk-adjusted return.
+
+---
+## Interactive Dashboard
+
+An interactive dashboard built with **Streamlit** allows exploration of the backtest results and strategy behaviour.
+
+The dashboard enables users to:
+
+- select the training window length used for walk-forward optimisation
+
+- compare portfolio strategies across multiple performance metrics
+
+- analyse cumulative returns and drawdowns
+
+- inspect predicted vs realised Sharpe, Sortino, and volatility
+- control mean return shrinkage and covariance matrix shrinkage
+
+- evaluate portfolio turnover and allocation dynamics
+
+Interactive charts are rendered using **Plotly**.
