@@ -329,6 +329,19 @@ def plot_predicted_vs_actual(
     )
     return fig
 
+def prediction_error_table(predicted: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    rows = []
+    for name, df in predicted.items():
+        rows.append({
+            "Strategy":       name,
+            "Sharpe MAE":     (df["pred_sharpe"]  - df["actual_sharpe"]).abs().mean(),
+            "Sharpe Bias":    (df["pred_sharpe"]  - df["actual_sharpe"]).mean(),
+            "Sortino MAE":    (df["pred_sortino"] - df["actual_sortino"]).abs().mean(),
+            "Sortino Bias":   (df["pred_sortino"] - df["actual_sortino"]).mean(),
+            "Vol MAE":        (df["pred_vol"]     - df["actual_vol"]).abs().mean(),
+            "Vol Bias":       (df["pred_vol"]     - df["actual_vol"]).mean(),
+        })
+    return pd.DataFrame(rows).set_index("Strategy")
 
 def style_summary_table(df: pd.DataFrame) -> pd.io.formats.style.Styler:
     pct_cols = ["CAGR", "Volatility", "MaxDrawdown", "CVaR95"]
@@ -458,6 +471,24 @@ with tab_perf:
 # ================================================================ TAB 2: Predicted vs Actual
 with tab_pred:
     st.subheader("🎯 Predicted vs Actual — per Rebalance Period")
+    # Summary table first — the answer at a glance
+    st.subheader("Estimation Error Summary")
+    err_df = prediction_error_table(backtest.predicted)
+    st.dataframe(
+        err_df.style
+            .background_gradient(
+                subset=["Sharpe MAE", "Sortino MAE", "Vol MAE"], 
+                cmap="Reds"
+            )
+            .background_gradient(
+                subset=["Sharpe Bias", "Sortino Bias", "Vol Bias"], 
+                cmap="RdYlGn_r"
+            )
+            .format("{:.3f}"),
+        use_container_width=True,
+    )
+    st.caption("MAE — average absolute prediction error. Bias — positive means optimizer was systematically optimistic.")
+
     st.caption(
         "**Dashed** = what the optimiser expected going into each period.  "
         "**Solid** = what actually happened.  "

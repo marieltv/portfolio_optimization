@@ -3,8 +3,8 @@
     └── 📁.github
         └── 📁workflows
             ├── ci.yaml
-    └── 📁.vscode
-        ├── settings.json
+    └── 📁.streamlit
+        ├── config.toml
     └── 📁src
         └── 📁portfolio_optimization
             ├── __init__.py
@@ -20,7 +20,7 @@
         ├── test_data.py
         ├── test_metrics.py
         ├── test_optimization.py
-    
+    ├── 📁venv
     ├── .gitignore
     ├── app.py
     ├── pyproject.toml
