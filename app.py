@@ -107,6 +107,8 @@ rebal_freq = st.sidebar.selectbox(
     format_func={"ME": "Monthly", "QE": "Quarterly", "YE": "Yearly"}.get,
     index=0,
 )
+
+st.sidebar.markdown("---")
 rf_rate = st.sidebar.number_input(
     "Risk-free rate (annual %)", min_value=0.0, max_value=20.0,
     value=DEFAULT_CONFIG.risk_free_rate * 100, step=0.25,
