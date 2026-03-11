@@ -160,9 +160,26 @@ pytest -v
 ---
 
 ## Results
-Results vary by universe and configuration. The dashboard exposes the full metric breakdown — CAGR, Sharpe, Sortino, Calmar, Max Drawdown, CVaR — alongside the predicted vs actual analysis per rebalance period.
 
-Sharpe and Sortino predictions are flat and near-constant — a direct consequence of estimating expected returns from a multi-year rolling window. This is not a modelling failure. It reflects a fundamental property of equity returns: covariance is forecastable, mean returns are not. The value of these strategies lies in risk budgeting and drawdown control, not in predicting next month's risk-adjusted return.
+Evaluated on US defence equities (`BA, NOC, LMT, RTX, AXON, GD`), `2018–2026`, `4-year` rolling training window, `monthly rebalancing`.
+
+| Strategy | CAGR | Sharpe | Sortino | Max Drawdown |
+|---|---|---|---|---|
+| Equal Weight | 20.3% | 1.05 | 1.08 | -17.5% |
+| Min Variance | 19.8% | 1.05 | 1.10 | -16.8% |
+| Risk Parity | 20.0% | 1.07 | 1.11 | -15.8% |
+| Reg Max Sharpe | 24.9% | 1.16 | 1.23 | -17.4% |
+
+**Regularised Max Sharpe** outperforms on all metrics despite being theoretically the most sensitive to estimation error — the L2 penalty appears sufficient to
+control weight concentration in this universe.
+
+**Estimation accuracy** — volatility is predicted with MAE ~0.07 across all strategies, confirming that covariance is more stable than mean returns.
+However, Spearman correlations between predicted and actual Sharpe and Sortino are near zero for all strategies, confirming that month-to-month
+risk-adjusted returns are not predictable from historical estimates alone — consistent with Merton (1980).
+
+**Ledoit-Wolf and James-Stein shrinkages** improved results marginally (differences of 0.01 or less), suggesting estimation error is not the primary source of out-of-sample degradation in this universe.
+
+**Sharpe and Sortino predictions** are flat and near-constant — a direct consequence of estimating expected returns from a multi-year rolling window. This is not a modelling failure. It reflects a fundamental property of equity returns: covariance is forecastable, mean returns are not. The value of these strategies lies in risk budgeting and drawdown control, not in predicting next month's risk-adjusted return.
 
 ---
 ## Interactive Dashboard
