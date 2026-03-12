@@ -159,9 +159,9 @@ pytest -v
 ```
 ---
 
-## Results
+## Empirical Results
 
-Evaluated on US defence equities (`BA, NOC, LMT, RTX, AXON, GD`), `2018–2026`, `4-year` rolling training window, `monthly rebalancing`.
+Evaluated on US defence equities — **Boeing (BA), Northrop Grumman (NOC), Lockheed Martin (LMT), RTX Corporation (RTX), Axon Enterprise (AXON), and General Dynamics (GD)** — over 2018–2026 using a 4-year rolling training window with monthly rebalancing.
 
 | Strategy | CAGR | Sharpe | Sortino | Max Drawdown |
 |---|---|---|---|---|
@@ -170,16 +170,14 @@ Evaluated on US defence equities (`BA, NOC, LMT, RTX, AXON, GD`), `2018–2026`,
 | Risk Parity | 20.0% | 1.07 | 1.11 | -15.8% |
 | Reg Max Sharpe | 24.9% | 1.16 | 1.23 | -17.4% |
 
-**Regularised Max Sharpe** outperforms on all metrics despite being theoretically the most sensitive to estimation error — the L2 penalty appears sufficient to
-control weight concentration in this universe.
+**Regularised Max Sharpe** achieves the strongest performance across most metrics. Although the strategy is theoretically the most sensitive to estimation error, the L2 penalty appears sufficient to prevent extreme weight concentration in this asset universe.
 
-**Estimation accuracy** — volatility is predicted with MAE ~0.07 across all strategies, confirming that covariance is more stable than mean returns.
-However, Spearman correlations between predicted and actual Sharpe and Sortino are near zero for all strategies, confirming that month-to-month
-risk-adjusted returns are not predictable from historical estimates alone — consistent with Merton (1980).
+**Estimation accuracy.**
+<br>Volatility forecasts exhibit relatively low error (MAE ≈ 0.07) across strategies, confirming that covariance estimates are substantially more stable than expected return estimates. However, the Spearman correlations between predicted and realised Sharpe and Sortino ratios are close to zero. This indicates that month-to-month risk-adjusted performance cannot be reliably inferred from historical estimates alone — consistent with findings such as those of Robert C. Merton.
 
-**Ledoit-Wolf and James-Stein shrinkages** improved results marginally (differences of 0.01 or less), suggesting estimation error is not the primary source of out-of-sample degradation in this universe.
+Applying shrinkage techniques such as **Ledoit–Wolf shrinkage** and **James–Stein estimator** resulted in only marginal improvements (≈0.01 or less across metrics), suggesting that estimation error is not the dominant source of out-of-sample degradation in this particular universe.
 
-**Sharpe and Sortino predictions** are flat and near-constant — a direct consequence of estimating expected returns from a multi-year rolling window. This is not a modelling failure. It reflects a fundamental property of equity returns: covariance is forecastable, mean returns are not. The value of these strategies lies in risk budgeting and drawdown control, not in predicting next month's risk-adjusted return.
+**Predicted Sharpe and Sortino values** remain relatively flat across time. This behaviour arises from estimating expected returns over a multi-year rolling window. Rather than indicating model failure, it reflects a fundamental empirical property of equity markets: covariance is moderately forecastable, whereas mean returns are not. In practice, these allocation methods therefore provide the greatest value through **risk budgeting, diversification, and drawdown control**, rather than through short-horizon return prediction.
 
 ---
 ## Interactive Dashboard
